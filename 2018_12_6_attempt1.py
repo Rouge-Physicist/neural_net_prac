@@ -39,7 +39,7 @@ class Neuralnet():
     
             
 
-
+''' I added some text'''
 neuralnet = Neuralnet((3,5),[2,1,3],[0,0,1])
 #neuralnet.feedforward()
 print(neuralnet.weights)
