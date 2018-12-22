@@ -23,76 +23,47 @@ def gradvec_Calc(weights,bias):
 
 class Neuralnet(): 
     
-    def __init__(self,node_nums,inpts,outpts,learning_rate):
-        self.nodes_in_layer = node_nums
-        self.input = inpts 
-        self.outpts = outpts
+    def __init__(self,nodes_in_layers,inpts_and_outpts,learning_rate):
+        self.nodes_in_layer = nodes_in_layers
+        self.inpts_and_outpts = inpts_and_outpts
         self.learnrate = learning_rate
         self.weights = []
         self.bias = []
-        for n,x in enumerate(node_nums):
-            self.bias.append(np.random.uniform(0,1))
-            if n == 0 :
-                self.weights.append(np.random.uniform(0,1,(x,len(self.input[0]))))
-            else :
-                self.weights.append(np.random.uniform(0,1,(node_nums[n],node_nums[n-1])))
-
-        self.weights.append(np.random.uniform(0, 1, (len(self.outpts[0]),node_nums[-1])))
-        self.bias.append(0)
-        
-    def feedforward(self):
-        costfunc = []
-        for k,z in enumerate(self.input):
-            self.layers = []
-            self.layer_deriv = []
-            for x in self.nodes_in_layer:
-                self.layers.append(np.zeros((x,1)))
-                self.layer_deriv.append(np.zeros((x, 1)))
-            num = len(self.outpts)
-            self.layers.append(np.zeros((num,1)))
-            self.layer_deriv.append(np.zeros((num, 1)))
-            for n,x in enumerate(self.weights):
-                if n == 0 :
-                    self.layers[n] = np.dot(x,self.input[k]) + self.bias[n]
-                else :
-                    self.layers[n] = np.dot(x,self.layers[n-1]) + self.bias[n]
-                self.layer_deriv[n] = sigmoid_deriv(self.layers[n])
-                self.layers[n] = sigmoid(self.layers[n])
-            costfunc.append(np.sum((self.outpts[k] - self.layers[-1]) ** 2))
-        Error = sum(costfunc)
-        print(Error,'\n',costfunc)
-    def backprop(self):
-        grad_vec = self.weights
-        for n,x in enumerate(self.weights):
-            if n ==0 :
-                error[-(n+1)] = -(self.outpts-self.layers[-1])
-                grad_vec[-(n+1)] = error[-(n+1)]*self.layer_deriv[-(n+1)]
+        ''' generating the weight matrices  '''
+        for n,x in enumerate(self.nodes_in_layer):
+            if len(self.weights)>=3:
+                self.bias.append(np.random.uniform(0,1))
+                pass
             else:
-                error[-(n+1)] = error[-n].dot(self.weights[-(n+1)])
-                grad_vec[-(n+1)] = error[-(n+1)]*self.layer_deriv[-(n+1)]
-
-
-
-
-
-        ''' 
-        C(y) = 0.5*SUM(Y2-y1)^2 + 0.5*SUM(Y2-y2)^2 
+                self.bias.append(np.random.uniform(0,1))
+                self.weights.append(np.random.uniform(-1,1,(self.nodes_in_layer[n],self.nodes_in_layer[n+1])))
+    
+    def feedforward(self,inpts,oupts):
+        ''' Generating the node outputs '''
+        self.layer = [np.matrix(inpts)]
+        for n,x in enumerate(self.weights):
+            self.layer.append(sigmoid(np.matrix(self.layer[n])*x))
         
-        therefore dC/dw = dC/dyi * dyi/dwij where yi = sigmoid(w1*y + w2*y2 + ...)
-        '''
+    def backprop(self,inpts,outpts):
+        ''' calculate the delta/stuff that gets reused to calculate the next error '''
+        delta = [np.matrix(-(outpts-self.layer[-1]).A1*self.layer[-1].A1*(1-self.layer[-1].A1))]
+        for n,x in enumerate(self.weights):
+            delta.append(np.matrix((delta[-1]*self.weights[-(n+1)].T).A1*self.layer[-(n+2)].A1*(1-self.layer[-(n+2)].A1)))
+        ''' update the weights '''
+        for m,x in enumerate(self.weights):
+            self.weights[-(m+1)] += self.learnrate*(self.layer[-(m+2)].T*delta[m])
+             
+            
+    def train_net(self):
+        for x in self.inpts_and_outpts:
+            self.feedforward(x[0],x[1])
+            self.backprop(x[0],x[1])
+            
+inpts_and_outpts = np.array([[[2,1,3,4],[0,0,1]],[[1,1,3,4],[0,1,0]]])
 
-    def Run_net(self):
-        self.feedforward()
-        self.backprop()
+nodes_in_hidden_layer = [3,5]
+nodes_in_layers = [len(inpts_and_outpts[0][0])]+nodes_in_hidden_layer + [len(inpts_and_outpts[0][1])]
+neuralnet = Neuralnet(nodes_in_layers,inpts_and_outpts,0.1)
+neuralnet.train_net()
 
 
-inpts = np.array([[2,1,3,4],[1,2,3,4]])
-outpts = np.array([[0,0,1],[0,1,0]])
-for n,x in enumerate(inpts):
-    inpts[n].shape = (len(inpts[n]),1)
-    outpts[n].shape = (len(outpts[n]),1)
-
-neuralnet = Neuralnet((3,5),inpts,outpts,0.1)
-neuralnet.feedforward()
-
-print(neuralnet.layers)
